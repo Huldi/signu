@@ -11,6 +11,7 @@ import "C"
 
 import (
     "unsafe"
+    "fmt"
 )
 
 const RESULT_SUCCESS uint = 0x00
@@ -49,6 +50,7 @@ func ETH_Adr(arr []byte) string{
 
 func Start_Wallet(){
     C.start_wallet()
+    fmt.Println("Да неужели?")
 }
 
 func Withdrawal_of_money(data []byte,len_data int, id []byte, sign *[]byte) bool{
