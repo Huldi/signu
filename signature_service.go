@@ -52,6 +52,7 @@ func Start_Wallet(){
     C.start_wallet()
     fmt.Println("Да неужели?")
     fmt.Println("Барабашка")
+    fmt.Println("Ёклмн")
 }
 
 func Withdrawal_of_money(data []byte,len_data int, id []byte, sign *[]byte) bool{
