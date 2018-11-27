@@ -15,44 +15,44 @@ import (
 
 const RESULT_SUCCESS uint = 0x00
 
-func BTC_Adr(arr []byte) string{
+func AddrBTC(arr []byte) string{
     var x C.uchar
     var i C.uint
     for i = 0;i < C.uint(len(arr));i++{
         x = (C.uchar)(arr[i])
         C.generate_id(x,i)
 	}
-    victory := C.malloc(C.sizeof_char * 64)
-    defer C.free(unsafe.Pointer(victory))
-    C.btc_adr((*C.char)(victory),&x)
+    address := C.malloc(C.sizeof_char * 64)
+    defer C.free(unsafe.Pointer(address))
+    C.btc_adr((*C.char)(address),&x)
     var buf []byte
-    buf = C.GoBytes(victory,64)
+    buf = C.GoBytes(address,64)
     str := string(buf[:x])
     return str
 }
 
-func ETH_Adr(arr []byte) string{
+func AddrETH(arr []byte) string{
     var x C.uchar
     var i C.uint
     for i = 0;i < C.uint(len(arr));i++{
         x = (C.uchar)(arr[i])
         C.generate_id(x,i)
 	}
-    victory := C.malloc(C.sizeof_char * 64)
-    defer C.free(unsafe.Pointer(victory))
-    C.eth_adr((*C.char)(victory),&x)
+    address := C.malloc(C.sizeof_char * 64)
+    defer C.free(unsafe.Pointer(address))
+    C.eth_adr((*C.char)(address),&x)
     var buf []byte
-    buf = C.GoBytes(victory,64)
+    buf = C.GoBytes(address,64)
     str := string(buf[:x])
     return str
 }
 
-func Start_Wallet(){
+func StartWallet(){
     C.start_wallet()
 }
 
-func Withdrawal_of_money(data []byte,len_data int, id []byte, sign *[]byte) bool{
-    Create_data(data[:])
+func WithdrawalOfMoney(data []byte,len_data int, id []byte, sign *[]byte) bool{
+    CreateData(data[:])
 
     var x C.uchar
     var i C.uint
@@ -69,11 +69,11 @@ func Withdrawal_of_money(data []byte,len_data int, id []byte, sign *[]byte) bool
     return true
 }
 
-func Check_Transaction(data []byte,length int, id []byte, sign []byte) bool{
+func CheckTransaction(data []byte,length int, id []byte, sign []byte) bool{
     tmp := make([]byte,len(data)+len(sign))
     copy(tmp[:length],data[:])
     copy(tmp[length:],sign)
-    Create_data(tmp[:])
+    CreateData(tmp[:])
 
     var x C.uchar
     var i C.uint
@@ -91,7 +91,7 @@ func Check_Transaction(data []byte,length int, id []byte, sign []byte) bool{
     }
 }
 
-func Create_data(arr []byte ){
+func CreateData(arr []byte ){
     var x C.uchar
     var i C.uint
     for i = 0;i < C.uint(len(arr));i++{
@@ -100,16 +100,14 @@ func Create_data(arr []byte ){
 	}
 }
 
-func Enclave_generate_key_pair() uint{
-   //res := C.generate_key_pair_within_enclave()
+func EnclaveGenerateKeyPair() uint{
    res := C.generate_key_pair_without_enclave()
    return uint(res)
 }
 
-func Enclave_export_public_key(buf *[]byte) uint{
+func EnclaveExportPublicKey(buf *[]byte) uint{
     open_key := C.malloc(C.sizeof_uchar * 64)
     defer C.free(unsafe.Pointer(open_key))
-   // res := C.export_public_key_from_enclave((*C.uchar)(open_key))
     res := C.export_public_key_without_enclave((*C.uchar)(open_key))
     if res == C.int(RESULT_SUCCESS){
         *buf = C.GoBytes(open_key,64)
@@ -120,13 +118,12 @@ func Enclave_export_public_key(buf *[]byte) uint{
     
 }
 
-func Enclave_sign_data(data []byte, length int, sign *[]byte) uint{
-    Create_data(data[:])
+func EnclaveSignData(data []byte, length int, sign *[]byte) uint{
+    CreateData(data[:])
 
     signature := C.malloc(C.sizeof_uchar * 64)
     defer C.free(unsafe.Pointer(signature))
     
-    //res := C.sign_data_in_enclave((*C.uchar)(signature),(C.uint)(length))
     res := C.sign_data_without_enclave((*C.uchar)(signature),(C.uint)(length))
     if res == C.int(RESULT_SUCCESS){
         *sign = C.GoBytes(signature,64)
@@ -136,13 +133,12 @@ func Enclave_sign_data(data []byte, length int, sign *[]byte) uint{
     }
 }
 
-func Enclave_verify_sign(data []byte,length int, sign []byte) bool{
+func EnclaveVerifySign(data []byte,length int, sign []byte) bool{
     tmp := make([]byte,len(data)+len(sign))
     copy(tmp[:length],data[:])
     copy(tmp[length:],sign)
-    Create_data(tmp[:])
+    CreateData(tmp[:])
    
-    //res := C.verify_signature_in_enclave((C.uint)(len(data)))
     res := C.verify_signature_without_enclave((C.uint)(len(data)))
     if res != 0x00{
         return false
