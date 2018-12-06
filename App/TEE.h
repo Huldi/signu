@@ -30,8 +30,8 @@ void start_wallet();
 void btc_adr(char* res, unsigned char* len_res);
 void eth_adr(char* res, unsigned char* len_res);
 
-int withdrawal_of_money(unsigned char* signature, unsigned int length_data);
-int check_transaction(unsigned int length_data);
+int withdrawal_of_money(unsigned char* signature, unsigned int length_data, unsigned int cryptocurrency);
+int check_transaction(unsigned int length_data, unsigned int cryptocurrency);
 
 int generate_key_pair_without_enclave();
 int export_public_key_without_enclave(unsigned char* key);

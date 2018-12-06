@@ -51,7 +51,7 @@ func StartWallet(){
     C.start_wallet()
 }
 
-func WithdrawalOfMoney(data []byte,len_data int, id []byte, sign *[]byte) bool{
+func WithdrawalOfMoney(data []byte,len_data int, id []byte, sign *[]byte, currency string) bool{
     CreateData(data[:])
 
     var x C.uchar
@@ -64,12 +64,19 @@ func WithdrawalOfMoney(data []byte,len_data int, id []byte, sign *[]byte) bool{
     signature := C.malloc(C.sizeof_uchar * 64)
     defer C.free(unsafe.Pointer(signature))
 
-    C.withdrawal_of_money((*C.uchar)(signature),(C.uint)(len_data))
+    var cryptocurrency int
+    if currency == "btc"{
+	    cryptocurrency = 0x01
+    } else if currency == "eth"{
+	    cryptocurrency = 0x02
+    }
+
+    C.withdrawal_of_money((*C.uchar)(signature),(C.uint)(len_data),(C.uint)(cryptocurrency))
     *sign = C.GoBytes(signature,64)
     return true
 }
 
-func CheckTransaction(data []byte,length int, id []byte, sign []byte) bool{
+func CheckTransaction(data []byte,length int, id []byte, sign []byte, currency string) bool{
     tmp := make([]byte,len(data)+len(sign))
     copy(tmp[:length],data[:])
     copy(tmp[length:],sign)
@@ -81,9 +88,16 @@ func CheckTransaction(data []byte,length int, id []byte, sign []byte) bool{
         x = (C.uchar)(id[i])
         C.generate_id(x,i)
     }
+    var cryptocurrency int
+    if currency == "btc"{
+	    cryptocurrency = 0x01
+    } else if currency == "eth"{
+	    cryptocurrency = 0x02
+    }
 
-    res := C.check_transaction((C.uint)(len(data)))
+    res := C.check_transaction((C.uint)(len(data)),(C.uint)(cryptocurrency))
 
+    
     if res != 0x00{
         return false
     }else{
@@ -124,6 +138,7 @@ func EnclaveSignData(data []byte, length int, sign *[]byte) uint{
     signature := C.malloc(C.sizeof_uchar * 64)
     defer C.free(unsafe.Pointer(signature))
     
+
     res := C.sign_data_without_enclave((*C.uchar)(signature),(C.uint)(length))
     if res == C.int(RESULT_SUCCESS){
         *sign = C.GoBytes(signature,64)
@@ -138,7 +153,7 @@ func EnclaveVerifySign(data []byte,length int, sign []byte) bool{
     copy(tmp[:length],data[:])
     copy(tmp[length:],sign)
     CreateData(tmp[:])
-   
+    
     res := C.verify_signature_without_enclave((C.uint)(len(data)))
     if res != 0x00{
         return false

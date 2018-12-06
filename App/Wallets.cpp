@@ -454,12 +454,11 @@ string generate_ETH_adress(unsigned char* id){
 }
 
 string generate_BTC_adress(unsigned char* id){
-	unsigned char private_key[32] = {0x1E,0x99,0x42,0x3A,0x4E,0xD2,0x76,0x08,0xA1,0x5A,0x26,0x16,0xA2,0xB0,0xE9,0xE5,0x2C,
-									   0xED,0x33,0x0A,0xC5,0x30,0xED,0xCC,0x32,0xC8,0xFF,0xC6,0xA5,0x26,0xAE,0xDD};
+	unsigned char private_key[32];
 	unsigned char public_key[64];
 	unsigned char public_key_compress[33];
 
-	//generate_user_private_key(id,private_key);
+	generate_user_private_key(id,private_key);
 
 	generate_public_key(private_key,public_key);
 	
@@ -470,21 +469,21 @@ string generate_BTC_adress(unsigned char* id){
 	return result;
 }
 
-void ecdsa_sign_data_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id){
+void ecdsa_sign_data_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id,unsigned int cryptocurrency){
 	
 	unsigned char private_key[32];
 	generate_user_private_key(id,private_key);
-	ecdsa_sign_data(data,len_data,signature,private_key);	
+	ecdsa_sign_data(data,len_data,signature,private_key, cryptocurrency);	
 }
 
-bool ecdsa_verify_sign_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id)
+bool ecdsa_verify_sign_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id, unsigned int cryptocurrency)
 {	
 	unsigned char private_key[32];
 	generate_user_private_key(id,private_key);
 	unsigned char public_key[64];
 	generate_public_key(private_key,public_key);
 	
-	return ecdsa_verify_sign(data,len_data,signature,public_key);	
+	return ecdsa_verify_sign(data,len_data,signature,public_key,cryptocurrency);	
 }
 
 void point_by_scalar_multi(secp256k1_point P, unsigned char* Scalar, secp256k1_point result)
@@ -634,7 +633,7 @@ void generator_to_scalar_multi(unsigned char* key, secp256k1_point result)
 	bdFree(&tmp_pub.Y);
 }
 
-void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signature, unsigned char* private_key)
+void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signature, unsigned char* private_key,unsigned int cryptocurrency)
 {
 	BIGD Secret;
 	Secret = bdNew();
@@ -644,15 +643,20 @@ void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signa
 	uint32_t tmp_hash[8];
 	
 	// 0 - расчет хэша от данных
-	sha256_calc_hash(data,len_data,tmp_hash);
+	if(cryptocurrency == 0x01){
+		sha256_calc_hash(data,len_data,tmp_hash);
 	
-	for(int j=0;j<8;j++)
-	{
-		hash[j*4] = tmp_hash[j]>>24;
-		hash[j*4+1] = (tmp_hash[j]>>16)&0xFF;
-		hash[j*4+2] = (tmp_hash[j]>>8)&0xFF;
-		hash[j*4+3] = tmp_hash[j]&0xFF;
+		for(int j=0;j<8;j++)
+		{	
+			hash[j*4] = tmp_hash[j]>>24;
+			hash[j*4+1] = (tmp_hash[j]>>16)&0xFF;
+			hash[j*4+2] = (tmp_hash[j]>>8)&0xFF;
+			hash[j*4+3] = tmp_hash[j]&0xFF;
+		}
 	}
+	else if(cryptocurrency == 0x02){
+		keccak_calc_hash(data,len_data,hash);
+	}	
 
 	BIGD Hash;
 	Hash = bdNew();
@@ -709,7 +713,7 @@ void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signa
 	bdFree(&H_XR);
 }
 
-bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* public_key)
+bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* public_key, unsigned int cryptocurrency)
 {
 	secp256k1_point Pub;
 	Pub.X = bdNew();
@@ -735,15 +739,20 @@ bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* si
 	// 2 - расчет хэша от данных
 	unsigned char hash[32];
 	uint32_t tmp_hash[8];
-		
-	sha256_calc_hash(data,len_data,tmp_hash);
+
+	if(cryptocurrency == 0x01){
+		sha256_calc_hash(data,len_data,tmp_hash);
 	
-	for(int j=0;j<8;j++)
-	{
-		hash[j*4] = tmp_hash[j]>>24;
-		hash[j*4+1] = (tmp_hash[j]>>16)&0xFF;
-		hash[j*4+2] = (tmp_hash[j]>>8)&0xFF;
-		hash[j*4+3] = tmp_hash[j]&0xFF;
+		for(int j=0;j<8;j++)
+		{
+			hash[j*4] = tmp_hash[j]>>24;
+			hash[j*4+1] = (tmp_hash[j]>>16)&0xFF;
+			hash[j*4+2] = (tmp_hash[j]>>8)&0xFF;
+			hash[j*4+3] = tmp_hash[j]&0xFF;
+		}
+	}
+	else if(cryptocurrency == 0x02){
+		keccak_calc_hash(data,len_data,hash);
 	}
 
 	BIGD Hash;

@@ -147,17 +147,17 @@ int verify_signature_without_enclave(unsigned int length_data)
     return SUCCESS;
 }
 
-int withdrawal_of_money(unsigned char* signature, unsigned int length_data)
+int withdrawal_of_money(unsigned char* signature, unsigned int length_data, unsigned int cryptocurrency)
 {
-    ecdsa_sign_data_with_id(data_to_sign,length_data,signature,id);
+    ecdsa_sign_data_with_id(data_to_sign,length_data,signature,id,cryptocurrency);
     for(int j=0;j<MAX_SIZE_DATA_TO_SIGN;j++)
         data_to_sign[j] = 0x00;
     return SUCCESS;
 }
 
-int check_transaction(unsigned int length_data)
+int check_transaction(unsigned int length_data, unsigned int cryptocurrency)
 {
-    bool res = ecdsa_verify_sign_with_id(data_to_sign,length_data,data_to_sign+length_data,id);
+    bool res = ecdsa_verify_sign_with_id(data_to_sign,length_data,data_to_sign+length_data,id,cryptocurrency);
     for(int j=0;j<MAX_SIZE_DATA_TO_SIGN;j++)
         data_to_sign[j] = 0x00;
     if(res == false){

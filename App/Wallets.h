@@ -41,8 +41,8 @@ void from_BIGD_to_uchar_array(BIGD prototype, unsigned char* type, uint32_t len_
 void generator_to_scalar_multi(unsigned char* key, secp256k1_point result);
 void point_by_scalar_multi(secp256k1_point P, unsigned char* Scalar, secp256k1_point result);
 
-void ecdsa_sign_data_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id);
-bool ecdsa_verify_sign_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id);
+void ecdsa_sign_data_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id, unsigned int cryptocurrency);
+bool ecdsa_verify_sign_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id, unsigned int cryptocurrency);
 
-void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signature, unsigned char* private_key);
-bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* public_key);
+void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signature, unsigned char* private_key, unsigned int cryptocurrency);
+bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* public_key, unsigned int cryptocurrency);
