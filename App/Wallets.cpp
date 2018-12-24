@@ -7,6 +7,7 @@ secp256k1_point Generator;
 
 BIGD secp256k1_p;
 BIGD secp256k1_n;
+BIGD secp256k1_limit_sign;
 
 unsigned char master_key[32] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31};
 
@@ -20,6 +21,8 @@ unsigned char out_iv[32] = {'s','e','c','r','e','t','t','o','p','r','a','s','s',
 
 unsigned char summand_coordinates[256];
 
+
+
 void start_secp256k1_param()
 {
 	bdConvFromDecimal(Generator.X, "55066263022277343669578718895168534326250603453777594175500187360389116729240");
@@ -28,6 +31,8 @@ void start_secp256k1_param()
 	bdConvFromDecimal(secp256k1_p, "115792089237316195423570985008687907853269984665640564039457584007908834671663");
 	secp256k1_n = bdNew();
 	bdConvFromHex(secp256k1_n, "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
+	secp256k1_limit_sign = bdNew();
+	bdConvFromHex(secp256k1_limit_sign,"0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0");
 }
 
 void calc_angle_factor_summ(secp256k1_point p, secp256k1_point q, BIGD result)
@@ -184,9 +189,6 @@ void generate_public_key(unsigned char* private_key, unsigned char* result)
 	secp256k1_point public_key;
 	generator_to_scalar_multi(private_key,public_key);
 
-//	bdPrintHex("public key X = ", public_key.X, "\n");
-//	bdPrintHex("public key Y = ", public_key.Y, "\n");
-
 	from_BIGD_to_uchar_array(public_key.X,result,32);
 	from_BIGD_to_uchar_array(public_key.Y,result+32,32);
 	
@@ -241,7 +243,7 @@ string encoding_to_BASE58(unsigned char* data)
 		bdSetEqual(base256, swp);
 		count++;
 	}
-
+	
 	bdFree(&value_0);
 	bdFree(&base);
 	bdFree(&r);
@@ -249,7 +251,7 @@ string encoding_to_BASE58(unsigned char* data)
 	bdFree(&swp);
 
 	unsigned char count_ones = 0;
-
+	
 	for (int j = 0; j < 25; j++)
 	{
 		if (data[j] == 0)
@@ -257,7 +259,7 @@ string encoding_to_BASE58(unsigned char* data)
 		else
 			break;
 	}
-
+	
 	for (int j = 0; j < count_ones; j++)
 		result += "1";
 
@@ -265,6 +267,7 @@ string encoding_to_BASE58(unsigned char* data)
 
 	for (int j = 0; j < count + 1; j++)
 		total += result[count - j];
+		
 	return total;
 }
 
@@ -295,7 +298,7 @@ string BTC_adress_from_public_key(unsigned char* public_key_compress)
 		hashing_key[4 * j + 3] = (ripemd160_hash[j] >> 8) & 0xFF;
 		hashing_key[4 * j + 4] = ripemd160_hash[j] & 0xFF;
 	}
-	hashing_key[0] = 0x00;
+	hashing_key[0] = 0x6f;// 0x6f testnet
 
 	sha256_calc_hash(hashing_key, 21, sha256_hash);
 
@@ -454,36 +457,41 @@ string generate_ETH_adress(unsigned char* id){
 }
 
 string generate_BTC_adress(unsigned char* id){
-	unsigned char private_key[32];
-	unsigned char public_key[64];
 	unsigned char public_key_compress[33];
 
-	generate_user_private_key(id,private_key);
-
-	generate_public_key(private_key,public_key);
-	
-	compress_public_key(public_key,public_key_compress);
+	export_compress_public_key_on_id(id, public_key_compress);
 	
 	string result = BTC_adress_from_public_key(public_key_compress);
 	
 	return result;
 }
 
-void ecdsa_sign_data_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id,unsigned int cryptocurrency){
-	
+void export_compress_public_key_on_id(unsigned char* id, unsigned char* public_key_compress){
 	unsigned char private_key[32];
+	
+	unsigned char public_key[64];
+	
 	generate_user_private_key(id,private_key);
-	ecdsa_sign_data(data,len_data,signature,private_key, cryptocurrency);	
+	
+	generate_public_key(private_key,public_key);
+
+	compress_public_key(public_key,public_key_compress);
 }
 
-bool ecdsa_verify_sign_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id, unsigned int cryptocurrency)
+void ecdsa_sign_data_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id, unsigned char type_hash){
+	unsigned char private_key[32];
+	generate_user_private_key(id,private_key);
+	ecdsa_sign_data(data,len_data,signature,private_key, type_hash);	
+}
+
+bool ecdsa_verify_sign_with_id(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* id, unsigned char type_hash)
 {	
 	unsigned char private_key[32];
 	generate_user_private_key(id,private_key);
 	unsigned char public_key[64];
 	generate_public_key(private_key,public_key);
-	
-	return ecdsa_verify_sign(data,len_data,signature,public_key,cryptocurrency);	
+		
+	return ecdsa_verify_sign(data,len_data,signature,public_key, type_hash);	
 }
 
 void point_by_scalar_multi(secp256k1_point P, unsigned char* Scalar, secp256k1_point result)
@@ -633,75 +641,122 @@ void generator_to_scalar_multi(unsigned char* key, secp256k1_point result)
 	bdFree(&tmp_pub.Y);
 }
 
-void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signature, unsigned char* private_key,unsigned int cryptocurrency)
+void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signature, unsigned char* private_key, unsigned char type_hash)
 {
 	BIGD Secret;
 	Secret = bdNew();
 	from_uchar_array_to_BIGD(private_key,32,Secret);
-	
+	// 0 - расчет хэша от данных
 	unsigned char hash[32];
 	uint32_t tmp_hash[8];
-	
-	// 0 - расчет хэша от данных
-	if(cryptocurrency == 0x01){
-		sha256_calc_hash(data,len_data,tmp_hash);
+	switch(type_hash)
+	{
+		case TYPE_HASH_ECDSA_SIMPLE:
+			sha256_calc_hash(data,len_data,tmp_hash);
 	
 		for(int j=0;j<8;j++)
-		{	
+		{
 			hash[j*4] = tmp_hash[j]>>24;
 			hash[j*4+1] = (tmp_hash[j]>>16)&0xFF;
 			hash[j*4+2] = (tmp_hash[j]>>8)&0xFF;
 			hash[j*4+3] = tmp_hash[j]&0xFF;
 		}
-	}
-	else if(cryptocurrency == 0x02){
-		keccak_calc_hash(data,len_data,hash);
-	}	
+		break;
 
+		case TYPE_HASH_ECDSA_BITCOIN:
+			sha256_calc_double_hash(data,len_data,tmp_hash);
+			for(int j=0;j<8;j++)
+			{
+				hash[j*4] = tmp_hash[j]>>24;
+				hash[j*4+1] = (tmp_hash[j]>>16)&0xFF;
+				hash[j*4+2] = (tmp_hash[j]>>8)&0xFF;
+				hash[j*4+3] = tmp_hash[j]&0xFF;
+			}
+					
+			break;
+
+		case TYPE_HASH_ECDSA_ETHEREUM:
+			keccak_calc_hash(data,len_data,hash);
+			break;
+		
+		default:break;
+	}
+	
 	BIGD Hash;
 	Hash = bdNew();
 	from_uchar_array_to_BIGD(hash,32,Hash);
-											
-	unsigned char efemerial_key[32];
-	bool ok = false;
-	//Содержимое нового gpsch_iv - сохранить в энергонезависимую память
-	// 1 - Вычисление случайного числа K от ГПСЧ на основе блочного шифра
-	while (ok != true)
-	{
-		expansion_key(gpsch_key);
-		speed_encryption(gpsch_iv);
-		for(int j=0;j<16;j++)
-			efemerial_key[j] = gpsch_iv[j];
-		speed_encryption(gpsch_iv);
-		for(int j=0;j<16;j++)
-			efemerial_key[j+16] = gpsch_iv[j];
-		ok = check_key_in_field(efemerial_key);
-	}
-	//2 - получение маскирующей точки r = G*K
+	bool correct_signature = false;
+
+	BIGD Efem,S,XR,H_XR,Sign;
+	Efem = bdNew();
+	S = bdNew();
+	XR = bdNew();
+	H_XR = bdNew();
+	Sign = bdNew();
+
+	BIGD value_0;
+	value_0 = bdNew();
+	bdSetShort(value_0, 0);
+
 	secp256k1_point R;
 	
-	generator_to_scalar_multi(efemerial_key,R);
-	// 3 - нахождение обратного по модулю от эфемерного ключа	
-	BIGD Efem;
-	Efem = bdNew();
-	from_uchar_array_to_BIGD(efemerial_key,32,Efem);
-		
-	BIGD S;
-	S = bdNew();
+	while(correct_signature != true)
+	{
+		unsigned char efemerial_key[32];
+		bool ok = false;
+		//Содержимое нового gpsch_iv - сохранить в энергонезависимую память
+		// 1 - Вычисление случайного числа K от ГПСЧ на основе блочного шифра
+		while (ok != true)
+		{
+			expansion_key(gpsch_key);
+			speed_encryption(gpsch_iv);
+			for(int j=0;j<16;j++)
+				efemerial_key[j] = gpsch_iv[j];
+			speed_encryption(gpsch_iv);
+			for(int j=0;j<16;j++)
+				efemerial_key[j+16] = gpsch_iv[j];
+			ok = check_key_in_field(efemerial_key);
+		}
+		//2 - получение маскирующей точки r = G*K
+				
+		generator_to_scalar_multi(efemerial_key,R);
+		// 3 - нахождение обратного по модулю от эфемерного ключа	
 	
-	bdModInv(S,Efem,secp256k1_n);
-	// 3 - вычисление подписи	
-	BIGD XR;
-	XR = bdNew();
-	bdModMult(XR,Secret,R.X,secp256k1_n);
-	BIGD H_XR;
-	H_XR = bdNew();
-	bdModAdd(H_XR,Hash,XR,secp256k1_n);
-	BIGD tt;
-	tt = bdNew();
-	bdModMult(tt,S,H_XR,secp256k1_n);
+		from_uchar_array_to_BIGD(efemerial_key,32,Efem);
+		
+		bdModInv(S,Efem,secp256k1_n);
+		// 3 - вычисление подписи	
+		bdModMult(XR,Secret,R.X,secp256k1_n);
+		
+		bdModAdd(H_XR,Hash,XR,secp256k1_n);
+	
+		bdModMult(Sign,S,H_XR,secp256k1_n);
+
+		if(bdCompare(Sign,secp256k1_limit_sign) > 0)
+		{
+			bdSubtract_s(Sign,secp256k1_n,Sign);
+		}
+		if((bdCompare(R.X,value_0) > 0) && (bdCompare(Sign,value_0) > 0))
+			correct_signature = true;
+	}
+	
 	from_BIGD_to_uchar_array(R.X,signature,32);
-	from_BIGD_to_uchar_array(tt,signature+32,32);
+	from_BIGD_to_uchar_array(Sign,signature+32,32);
+
+	BIGD value_2;
+	value_2 = bdNew();
+	bdSetShort(value_2,2);
+
+	bdModulo(R.Y,R.Y,value_2);
+
+	if( bdCompare(R.Y,value_0) > 0)
+	{
+		signature[64] = 36;
+	}
+	else
+	{
+		signature[64] = 35;
+	}		
 
 	bdFree(&Secret);
 	bdFree(&Hash);
@@ -711,9 +766,11 @@ void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signa
 	bdFree(&S);
 	bdFree(&XR);
 	bdFree(&H_XR);
+	bdFree(&value_0);
+	bdFree(&value_2);
 }
 
-bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* public_key, unsigned int cryptocurrency)
+bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* public_key, unsigned char type_hash)
 {
 	secp256k1_point Pub;
 	Pub.X = bdNew();
@@ -736,28 +793,45 @@ bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* si
 		bdFree(&Pub.Y);
 		return false;
 	}
-	// 2 - расчет хэша от данных
+	
+	// 0 - расчет хэша от данных
 	unsigned char hash[32];
 	uint32_t tmp_hash[8];
+	switch(type_hash)
+	{
+		case TYPE_HASH_ECDSA_SIMPLE:
+			sha256_calc_hash(data,len_data,tmp_hash);
+			for(int j=0;j<8;j++)
+			{
+				hash[j*4] = tmp_hash[j]>>24;
+				hash[j*4+1] = (tmp_hash[j]>>16)&0xFF;
+				hash[j*4+2] = (tmp_hash[j]>>8)&0xFF;
+				hash[j*4+3] = tmp_hash[j]&0xFF;
+			}
+			break;
 
-	if(cryptocurrency == 0x01){
-		sha256_calc_hash(data,len_data,tmp_hash);
+		case TYPE_HASH_ECDSA_BITCOIN:
+			sha256_calc_double_hash(data,len_data,tmp_hash);
+			for(int j=0;j<8;j++)
+			{
+				hash[j*4] = tmp_hash[j]>>24;
+				hash[j*4+1] = (tmp_hash[j]>>16)&0xFF;
+				hash[j*4+2] = (tmp_hash[j]>>8)&0xFF;
+				hash[j*4+3] = tmp_hash[j]&0xFF;
+			}			
+			break;
+
+		case TYPE_HASH_ECDSA_ETHEREUM:
+			keccak_calc_hash(data,len_data,hash);
+			break;
+
+		default: return false;
+	}
 	
-		for(int j=0;j<8;j++)
-		{
-			hash[j*4] = tmp_hash[j]>>24;
-			hash[j*4+1] = (tmp_hash[j]>>16)&0xFF;
-			hash[j*4+2] = (tmp_hash[j]>>8)&0xFF;
-			hash[j*4+3] = tmp_hash[j]&0xFF;
-		}
-	}
-	else if(cryptocurrency == 0x02){
-		keccak_calc_hash(data,len_data,hash);
-	}
-
 	BIGD Hash;
 	Hash = bdNew();
 	from_uchar_array_to_BIGD(hash,32,Hash);
+	
 	// 3 - вычисление U1 и U2
 	
 	BIGD Sign, R, S_inv, U1, U2;
@@ -769,7 +843,19 @@ bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* si
 
 	from_uchar_array_to_BIGD(signature,32,R);
 	from_uchar_array_to_BIGD(signature+32,32,Sign);
-	
+	BIGD value_0;
+	value_0 = bdNew();
+	bdSetShort(value_0, 0);
+	if(bdCompare(Sign,secp256k1_limit_sign) > 0)
+	{		
+		return false;
+	}
+	if((bdCompare(R,value_0) == 0) || (bdCompare(Sign,value_0) == 0))
+	{
+		return false;
+	}
+		
+
 	bdModInv(S_inv,Sign,secp256k1_n);
 	bdModMult(U1,S_inv,Hash,secp256k1_n);
 	bdModMult(U2,S_inv,R,secp256k1_n);
@@ -789,8 +875,6 @@ bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* si
 	secp256k1_point total;
 	unsigned char res[32];
 	summ_point(Sum1,Sum2, total);
-
-	
 	from_BIGD_to_uchar_array(total.X,res,32);
 	
 	bdFree(&Hash);
@@ -801,13 +885,29 @@ bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* si
 	bdFree(&U2);
 	bdFree(&Pub.X);
 	bdFree(&Pub.Y);
+	bdFree(&value_0);
 
 	// 5 - проверка полученной подписи
 	for(int j=0;j<32;j++)
 	{
 		if(res[j] != signature[j])
-			return false;	
+			return false;				
 	}
 
 	return true;
+}
+
+void sha256_calc_double_hash(unsigned char* data, uint32_t len_data, uint32_t* hash)
+{
+	unsigned char tmp[32];
+	uint32_t tmp_hash[8];
+	sha256_calc_hash(data,len_data,tmp_hash);
+	for(int j=0;j<8;j++)
+	{
+		tmp[4*j] = tmp_hash[j]>>24;
+		tmp[4*j+1] = (tmp_hash[j]>>16)&0xFF;
+		tmp[4*j+2] = (tmp_hash[j]>>8)&0xFF;
+		tmp[4*j+3] = tmp_hash[j]&0xFF;
+	}
+	sha256_calc_hash(tmp,32,hash);
 }

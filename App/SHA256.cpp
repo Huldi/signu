@@ -6,7 +6,7 @@ uint32_t sha256_pre_handle_data(unsigned char* data, uint32_t length, uint32_t* 
     uint32_t j;
 	if (length / 64 == 0x00)
 	{
-        unsigned char diff = (unsigned char)(64 - length);
+		unsigned char diff = (unsigned char)(64 - length);
 
 		if (diff <= 8)
 		{
@@ -24,19 +24,20 @@ uint32_t sha256_pre_handle_data(unsigned char* data, uint32_t length, uint32_t* 
 		for (j = 0; j < 4; j++)
             tmp_char[size_arr - 4 + j] = (unsigned char)((length >> ((3 - j) * 8)) & 0xFF);
 		for (j = 0; j < size_arr / 4; j++)
-			data_to_long[j] = (tmp_char[j * 4] << 24) + (tmp_char[j * 4 + 1] << 16) + (tmp_char[j * 4 + 2] << 8) + (tmp_char[j * 4 + 3]);
+			data_to_long[j] = (tmp_char[j * 4] << 24) + (tmp_char[j * 4 + 1] << 16) + (tmp_char[j * 4 + 2] << 8) + (tmp_char[j * 4 + 3]);	
 		delete[] tmp_char;
 	}
 	else if (length / 64 != 0x00)
 	{
-        uint32_t num_block = length / 64 + 1;
+		uint32_t num_block = length / 64 + 1;
         unsigned char diff = (unsigned char)(64 - length % 64);
 		if (diff <= 8)
 			size_arr = (num_block + 1) * 64;
 		else
 			size_arr = num_block * 64;
-
+		
 		unsigned char* tmp_char = new unsigned char[size_arr];
+		
 		for (j = 0; j < length; j++)
 			tmp_char[j] = data[j];
 		tmp_char[length] = 0x80;
@@ -47,18 +48,17 @@ uint32_t sha256_pre_handle_data(unsigned char* data, uint32_t length, uint32_t* 
             tmp_char[size_arr - 4 + j] = (unsigned char)((length >> ((3 - j) * 8)) & 0xFF);
 		for (j = 0; j < size_arr / 4; j++)
 			data_to_long[j] = (tmp_char[j * 4] << 24) + (tmp_char[j * 4 + 1] << 16) + (tmp_char[j * 4 + 2] << 8) + (tmp_char[j * 4 + 3]);
-		delete[] tmp_char;
+		
+		delete [] tmp_char;
 	}
 	return (size_arr / 64);
 }
 
 void sha256_calc_hash(unsigned char* data, uint32_t length, uint32_t* hash)
 {
-    uint32_t* tmp_long = new uint32_t[length / 4 + 16];
-
-    uint32_t numb_iteration = sha256_pre_handle_data(data, length, tmp_long);
-
-    uint32_t tmp[16];
+    uint32_t* tmp_long = new uint32_t[length / 4 + 32];
+	uint32_t numb_iteration = sha256_pre_handle_data(data, length, tmp_long);
+	uint32_t tmp[16];
     uint32_t current_hash[8];
     uint32_t  temp[8];
 	for (int j = 0; j < 8; j++)

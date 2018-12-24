@@ -61,18 +61,22 @@ func WithdrawalOfMoney(data []byte,len_data int, id []byte, sign *[]byte, curren
         C.generate_id(x,i)
     }
 
-    signature := C.malloc(C.sizeof_uchar * 64)
+    signature := C.malloc(C.sizeof_uchar * 65)
     defer C.free(unsafe.Pointer(signature))
 
-    var cryptocurrency int
+    var cryptocurrency C.uchar
     if currency == "btc"{
 	    cryptocurrency = 0x01
     } else if currency == "eth"{
 	    cryptocurrency = 0x02
     }
 
-    C.withdrawal_of_money((*C.uchar)(signature),(C.uint)(len_data),(C.uint)(cryptocurrency))
-    *sign = C.GoBytes(signature,64)
+    C.withdrawal_of_money((*C.uchar)(signature),(C.uint)(len_data),(cryptocurrency))
+	if currency == "btc"{
+	*sign = C.GoBytes(signature,64)
+    }else{
+	*sign = C.GoBytes(signature,65)
+    }
     return true
 }
 
@@ -88,14 +92,14 @@ func CheckTransaction(data []byte,length int, id []byte, sign []byte, currency s
         x = (C.uchar)(id[i])
         C.generate_id(x,i)
     }
-    var cryptocurrency int
+    var cryptocurrency C.uchar
     if currency == "btc"{
 	    cryptocurrency = 0x01
     } else if currency == "eth"{
 	    cryptocurrency = 0x02
     }
 
-    res := C.check_transaction((C.uint)(len(data)),(C.uint)(cryptocurrency))
+    res := C.check_transaction((C.uint)(len(data)),cryptocurrency)
 
     
     if res != 0x00{
@@ -160,4 +164,24 @@ func EnclaveVerifySign(data []byte,length int, sign []byte) bool{
     }else{
         return true
     }
+}
+
+func ExportCompressPublicKey(id []byte, buf *[]byte) uint{
+    var x C.uchar
+    var i C.uint
+    for i = 0;i < C.uint(len(id));i++{
+        x = (C.uchar)(id[i])
+        C.generate_id(x,i)
+    }
+   
+    open_key := C.malloc(C.sizeof_uchar * 33)
+    defer C.free(unsafe.Pointer(open_key))
+    res := C.get_compress_public_key((*C.uchar)(open_key))
+    if res == C.int(RESULT_SUCCESS){
+        *buf = C.GoBytes(open_key,33)
+        return uint(res)
+    }else{
+        return uint(res)
+    }
+
 }

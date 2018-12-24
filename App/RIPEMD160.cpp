@@ -87,7 +87,7 @@ uint32_t ripemd160_pre_handle_data(unsigned char* data, uint32_t length, uint32_
 
 void ripemd160_calc_hash(unsigned char* data, uint32_t length, uint32_t* hash)
 {
-    uint32_t* tmp_long = new uint32_t[length / 4 + 16];
+    uint32_t* tmp_long = new uint32_t[length / 4 + 32];
 
     uint32_t numb_iteration = ripemd160_pre_handle_data(data, length, tmp_long);
 

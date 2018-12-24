@@ -72,31 +72,31 @@ void expansion_key(unsigned char* master_key)
 	unsigned char temp_array[32];
 	unsigned char shift_position = 0x00;
 
-	for(int j=0;j<SIZE_BLOCK_DATA;j++)// �������� ������ 2 �������� �� ������-�����
+	for(int j=0;j<SIZE_BLOCK_DATA;j++)
 	{
 		expansion_key_array[j] = master_key[j];
 		expansion_key_array[j+SIZE_BLOCK_DATA] = master_key[j+SIZE_BLOCK_DATA];
 	}
 	unsigned char temp1[SIZE_BLOCK_DATA],temp2[SIZE_BLOCK_DATA],temp_left[SIZE_BLOCK_DATA];
 
-	for(int j=0;j<4;j++)// ���������� ��� ��������� (3,4) (5,6) (7,8) (9,10)
+	for(int j=0;j<4;j++)
 	{
 		for(int t=0;t<SIZE_BLOCK_DATA;t++)
 		{
 			temp1[t] = expansion_key_array[2*j*SIZE_BLOCK_DATA+t];
 			temp2[t] = expansion_key_array[2*j*SIZE_BLOCK_DATA + SIZE_BLOCK_DATA + t];
 		}
-		for(int k=0;k<8;k++)// ������ ���������������� �������������� �� ������ ���� ��������
+		for(int k=0;k<8;k++)
 		{
 			for(int t=0;t<SIZE_BLOCK_DATA;t++)
-				temp_left[t] = temp1[t];//��������� ������� �������� ����� ����� ��� �������� ���� ��������
+				temp_left[t] = temp1[t];
 			for(int i=0;i<SIZE_BLOCK_DATA;i++) //SX[C]
 			{
-				temp1[i] ^= CONSTANTS_C[8*j*SIZE_BLOCK_DATA + k*SIZE_BLOCK_DATA + i];// ��������� �����
-				temp1[i] = S_TABLE[temp1[i]];// �������������� ����� �� ������� �����
+				temp1[i] ^= CONSTANTS_C[8*j*SIZE_BLOCK_DATA + k*SIZE_BLOCK_DATA + i];
+				temp1[i] = S_TABLE[temp1[i]];
 			}
-			//L-��������������
-			for(int k=16;k<32;k++)// �������� � ������� ����� "�-�� ������" ������� ��������� ����������
+			
+			for(int k=16;k<32;k++)
 			{
 				temp_array[k] = temp1[k-16];
 			}
@@ -119,13 +119,13 @@ void expansion_key(unsigned char* master_key)
 							  TABLE_MULTIPLY_32[temp_array[16-shift_position+13]] ^
 							  TABLE_MULTIPLY_148[temp_array[16-shift_position+14]] ^
 							  temp_array[16-shift_position+15];
-				shift_position++;// �������� ������ � ������� ������
-				temp_array[16-shift_position] = l;// �������� ������� ������ ����������� l-��������������
+				shift_position++;
+				temp_array[16-shift_position] = l;
 			}
-			// L-�����������
+			
 			for(int i=0;i<SIZE_BLOCK_DATA;i++)
 				temp1[i] = temp_array[i];
-			// ��������� ������ �������� �� �����
+			
 			for(int t=0;t<SIZE_BLOCK_DATA;t++)
 			{
 				temp1[t] ^= temp2[t];
@@ -133,7 +133,7 @@ void expansion_key(unsigned char* master_key)
 			}			
 			
 		}
-		for(int i=0;i<SIZE_BLOCK_DATA;i++)// �������� ���������� ��������� � ������� ������
+		for(int i=0;i<SIZE_BLOCK_DATA;i++)
 		{
 			expansion_key_array[2*(j+1)*SIZE_BLOCK_DATA + i] = temp1[i];
 			expansion_key_array[2*(j+1)*SIZE_BLOCK_DATA + SIZE_BLOCK_DATA + i] = temp2[i];
@@ -166,8 +166,8 @@ void calculation_constants()
 			temp[k] = 0x00;
 		temp[SIZE_BLOCK_DATA-1] = j+1;
 
-		//L-��������������
-		for(int k=16;k<32;k++)// �������� � ������� ����� "�-�� ������" ������� ��������� ����������
+		
+		for(int k=16;k<32;k++)
 		{
 			temp_array[k] = temp[k-16];
 		}
@@ -190,8 +190,8 @@ void calculation_constants()
 						  TABLE_MULTIPLY_32[temp_array[16-shift_position+13]] ^
 						  TABLE_MULTIPLY_148[temp_array[16-shift_position+14]] ^
 						  temp_array[16-shift_position+15];
-			shift_position++;// �������� ������ � ������� ������
-			temp_array[16-shift_position] = l;// �������� ������� ������ ����������� l-��������������
+			shift_position++;
+			temp_array[16-shift_position] = l;
 		}
 		for(int k=0;k<SIZE_BLOCK_DATA;k++)
 			CONSTANTS_C[j*SIZE_BLOCK_DATA+k] = temp_array[k];
@@ -202,19 +202,19 @@ unsigned char myltiply_in_field_8(unsigned char a,unsigned char b)
 {
 	unsigned char res = 0;
 	unsigned short temp = 0x0000;
-	for(int j=0;j<8;j++)// ��������� �� �������� ����
+	for(int j=0;j<8;j++)
 	{
 		if(((b>>(7-j))&0x01) == 1)
 			temp ^= (a<<(7-j));
 	}
-	// ������� �� ������� ������������ �� ���������� ������� ����
+	
 	if(temp != 0)
 	{
-		unsigned char t = 15;// ����� �������� ��������� t - ����� �������� ���������� ���� temp - ������������
+		unsigned char t = 15;
 		while(t > 7)
 		{
 			t = find_elder_bit(temp);
-			temp ^= (PRIMITIVE_POLINOM<<(t-8));// ������� ��� - ������� ��������� ��� � ���������� ��������
+			temp ^= (PRIMITIVE_POLINOM<<(t-8));
 		}
 		res = (unsigned char)temp;
 	}
@@ -223,7 +223,7 @@ unsigned char myltiply_in_field_8(unsigned char a,unsigned char b)
 	return res;
 }
 
-unsigned char find_elder_bit(unsigned short a)// ����� ������ ��������� ��� (������� �� ��������� ��������, ���� � = 0�00 - ��� ��������� �����)
+unsigned char find_elder_bit(unsigned short a)
 {
 	unsigned char res = 0;
 	for(int j=0;j<16;j++)
@@ -239,7 +239,6 @@ unsigned char find_elder_bit(unsigned short a)// ����� �����
 
 void L_transform(unsigned char* data)
 {
-	//L-��������������
 	for(int k=0;k<16;k++)
 	{
 		unsigned char l = TABLE_MULTIPLY_148[data[0]] ^

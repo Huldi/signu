@@ -71,27 +71,26 @@ void generate_id(unsigned char byte, unsigned int part)
 
 void btc_adr(char* res, unsigned char* len_res)
 {
-  string es = generate_BTC_adress(id);
-    for(int j=0;j<42;j++)
-        res[j] = es[j];
+    string addr = generate_BTC_adress(id);
+    for(int j=0;j<addr.size();j++)
+        res[j] = addr[j];
     
-    *len_res = 42;
+    *len_res = addr.size();
 }
 
 void eth_adr(char* res, unsigned char* len_res)
 {
-    string es = generate_ETH_adress(id);
-    for(int j=0;j<42;j++)
-        res[j] = es[j];
+    string addr = generate_ETH_adress(id);
+    for(int j=0;j<addr.size();j++)
+        res[j] = addr[j];
     
-    *len_res = 42;
+    *len_res = addr.size();
 }
 
 void start_wallet(){
     start_secp256k1_param();
     Kuznyechik_start();
 }
-
 
 int generate_key_pair_without_enclave()
 {
@@ -122,7 +121,6 @@ int export_public_key_without_enclave(unsigned char* key)
         }
         return SUCCESS;
     }
-    cout<<"Не создан"<<endl;
     return FAIL;    
 }
 
@@ -130,7 +128,7 @@ int sign_data_without_enclave(unsigned char* signature, unsigned int length_data
 {
     if(key_was_create == FAIL)
         return FAIL;
-    ecdsa_sign_data(data_to_sign,length_data,signature,private_key_without_enclave);
+    ecdsa_sign_data(data_to_sign,length_data,signature,private_key_without_enclave,TYPE_HASH_ECDSA_SIMPLE);
     for(int j=0;j<MAX_SIZE_DATA_TO_SIGN;j++)
         data_to_sign[j] = 0x00;    
     return SUCCESS;
@@ -138,7 +136,7 @@ int sign_data_without_enclave(unsigned char* signature, unsigned int length_data
 
 int verify_signature_without_enclave(unsigned int length_data)
 {
-    bool res = ecdsa_verify_sign(data_to_sign,length_data,data_to_sign+length_data,public_key_without_enclave);
+    bool res = ecdsa_verify_sign(data_to_sign,length_data,data_to_sign+length_data,public_key_without_enclave,TYPE_HASH_ECDSA_SIMPLE);
     for(int j=0;j<MAX_SIZE_DATA_TO_SIGN;j++)
         data_to_sign[j] = 0x00;
     if(res == false){
@@ -147,7 +145,7 @@ int verify_signature_without_enclave(unsigned int length_data)
     return SUCCESS;
 }
 
-int withdrawal_of_money(unsigned char* signature, unsigned int length_data, unsigned int cryptocurrency)
+int withdrawal_of_money(unsigned char* signature, unsigned int length_data,unsigned char cryptocurrency)
 {
     ecdsa_sign_data_with_id(data_to_sign,length_data,signature,id,cryptocurrency);
     for(int j=0;j<MAX_SIZE_DATA_TO_SIGN;j++)
@@ -155,7 +153,7 @@ int withdrawal_of_money(unsigned char* signature, unsigned int length_data, unsi
     return SUCCESS;
 }
 
-int check_transaction(unsigned int length_data, unsigned int cryptocurrency)
+int check_transaction(unsigned int length_data,unsigned char cryptocurrency)
 {
     bool res = ecdsa_verify_sign_with_id(data_to_sign,length_data,data_to_sign+length_data,id,cryptocurrency);
     for(int j=0;j<MAX_SIZE_DATA_TO_SIGN;j++)
@@ -163,5 +161,11 @@ int check_transaction(unsigned int length_data, unsigned int cryptocurrency)
     if(res == false){
         return FAIL;
     }
+    return SUCCESS;
+}
+
+int get_compress_public_key(unsigned char* key)
+{
+    export_compress_public_key_on_id(id,key);
     return SUCCESS;
 }

@@ -5,10 +5,9 @@ void encryption(unsigned char* plain_text1);
 void speed_encryption(unsigned char* plain_text1);
 void expansion_key(unsigned char* master_key);
 void L_transform(unsigned char* data);
-//void L_transform_TABLE(unsigned char* data);
 void calculation_constants();
 void generate_speed_table();
 
-void Kuznyechik_start();// ��������� ��������, ���������� ������ �����, ������������ ������ �������������
+void Kuznyechik_start();
 
 
