@@ -72,10 +72,10 @@ void generate_id(unsigned char byte, unsigned int part)
 void btc_adr(char* res, unsigned char* len_res)
 {
     string addr = generate_BTC_adress(id);
-    for(int j=0;j<addr.size();j++)
+   
+    for(int j=0;j<addr.size()-1;j++)
         res[j] = addr[j];
-    
-    *len_res = addr.size();
+    *len_res = (addr.size()-1);
 }
 
 void eth_adr(char* res, unsigned char* len_res)

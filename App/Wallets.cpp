@@ -264,10 +264,10 @@ string encoding_to_BASE58(unsigned char* data)
 		result += "1";
 
 	string total;
-
-	for (int j = 0; j < count + 1; j++)
+	for (int j = 0; j < count+1; j++)
 		total += result[count - j];
-		
+	for(int j=0;j<count;j++)
+		total[j] = total[j+1];
 	return total;
 }
 
