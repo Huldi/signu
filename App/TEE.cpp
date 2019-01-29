@@ -72,10 +72,10 @@ void generate_id(unsigned char byte, unsigned int part)
 void btc_adr(char* res, unsigned char* len_res)
 {
     string addr = generate_BTC_adress(id);
-   
-    for(int j=0;j<addr.size()-1;j++)
+  
+    for(int j=0;j<addr.size();j++)
         res[j] = addr[j];
-    *len_res = (addr.size()-1);
+    *len_res = (addr.size());
 }
 
 void eth_adr(char* res, unsigned char* len_res)
@@ -167,5 +167,12 @@ int check_transaction(unsigned int length_data,unsigned char cryptocurrency)
 int get_compress_public_key(unsigned char* key)
 {
     export_compress_public_key_on_id(id,key);
+    return SUCCESS;
+}
+
+
+int get_btc_addr_raw(unsigned char* addr_raw, unsigned char type_net)
+{
+    BTC_raw_addr_from_id(id,addr_raw,type_net);
     return SUCCESS;
 }

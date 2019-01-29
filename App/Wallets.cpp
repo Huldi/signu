@@ -259,15 +259,15 @@ string encoding_to_BASE58(unsigned char* data)
 		else
 			break;
 	}
-	
+	cout<<"Число нулей = "<<int(count_ones)<<endl;
+	cout<<"Res = "<<result<<endl;
 	for (int j = 0; j < count_ones; j++)
 		result += "1";
-
+	cout<<"Res + 1 = "<<result<<endl;
 	string total;
-	for (int j = 0; j < count+1; j++)
-		total += result[count - j];
-	for(int j=0;j<count;j++)
-		total[j] = total[j+1];
+	for (int j = 0; j < result.size(); j++)
+		total += result[result.size()-1 - j];
+	cout<<"Total = "<<total<<endl;
 	return total;
 }
 
@@ -278,7 +278,10 @@ string BTC_adress_from_public_key(unsigned char* public_key_compress)
 	unsigned char temp[32];
 	unsigned char hashing_key[21];
 	unsigned char adr[25];
-
+	
+	/*unsigned char pbk_tmp[33] = {0x03,
+								 0x07,0x2d,0x50,0x8c,0x68,0x34,0x32,0x66,0x3b,0x56,0x4f,0xfe,0xd8,0x45,0xbd,0xf2,
+								 0xc8,0x6c,0xeb,0xbd,0xc5,0x61,0x1a,0x9f,0x33,0xc6,0xd6,0x39,0x2c,0x70,0x58,0x33};*/
 	sha256_calc_hash(public_key_compress, 33, sha256_hash);
 
 	for (int j = 0; j < 8; j++)
@@ -298,7 +301,7 @@ string BTC_adress_from_public_key(unsigned char* public_key_compress)
 		hashing_key[4 * j + 3] = (ripemd160_hash[j] >> 8) & 0xFF;
 		hashing_key[4 * j + 4] = ripemd160_hash[j] & 0xFF;
 	}
-	hashing_key[0] = 0x6f;// 0x6f testnet
+	hashing_key[0] = 0x00;// 0x6f testnet, 0x00 - mainnet
 
 	sha256_calc_hash(hashing_key, 21, sha256_hash);
 
@@ -458,7 +461,7 @@ string generate_ETH_adress(unsigned char* id){
 
 string generate_BTC_adress(unsigned char* id){
 	unsigned char public_key_compress[33];
-
+	
 	export_compress_public_key_on_id(id, public_key_compress);
 	
 	string result = BTC_adress_from_public_key(public_key_compress);
@@ -910,4 +913,36 @@ void sha256_calc_double_hash(unsigned char* data, uint32_t len_data, uint32_t* h
 		tmp[4*j+3] = tmp_hash[j]&0xFF;
 	}
 	sha256_calc_hash(tmp,32,hash);
+}
+
+void BTC_raw_addr_from_id(unsigned char* id, unsigned char* raw_addr, unsigned char type_net)
+{
+	unsigned char public_key_compress[33];
+
+	export_compress_public_key_on_id(id, public_key_compress);
+
+	uint32_t sha256_hash[8];
+    uint32_t ripemd160_hash[5];
+	unsigned char temp[32];
+	
+	sha256_calc_hash(public_key_compress, 33, sha256_hash);
+
+	for (int j = 0; j < 8; j++)
+	{
+		temp[j * 4] = sha256_hash[j] >> 24;
+		temp[j * 4 + 1] = (sha256_hash[j] >> 16) & 0xFF;
+		temp[j * 4 + 2] = (sha256_hash[j] >> 8) & 0xFF;
+		temp[j * 4 + 3] = (sha256_hash[j]) & 0xFF;
+	}
+
+	ripemd160_calc_hash(temp, 32, ripemd160_hash);
+
+	for (int j = 0; j < 5; j++)
+	{
+		raw_addr[4 * j + 1] = ripemd160_hash[j] >> 24;
+		raw_addr[4 * j + 2] = (ripemd160_hash[j] >> 16) & 0xFF;
+		raw_addr[4 * j + 3] = (ripemd160_hash[j] >> 8) & 0xFF;
+		raw_addr[4 * j + 4] = ripemd160_hash[j] & 0xFF;
+	}
+	raw_addr[0] = type_net;
 }

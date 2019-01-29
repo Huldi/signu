@@ -185,3 +185,23 @@ func ExportCompressPublicKey(id []byte, buf *[]byte) uint{
     }
 
 }
+
+func ExportRawBTCAddr(id []byte, raw_addr *[]byte, typeNet uint8) uint{
+    var x C.uchar
+    var i C.uint
+    for i = 0;i < C.uint(len(id));i++{
+        x = (C.uchar)(id[i])
+        C.generate_id(x,i)
+    }
+   
+    addr := C.malloc(C.sizeof_uchar * 21)
+    defer C.free(unsafe.Pointer(addr))
+    
+    res := C.get_btc_addr_raw((*C.uchar)(addr),(C.uchar)(typeNet))
+    if res == C.int(RESULT_SUCCESS){
+        *raw_addr = C.GoBytes(addr,21)
+        return uint(res)
+    }else{
+        return uint(res)
+    }
+}
