@@ -259,15 +259,14 @@ string encoding_to_BASE58(unsigned char* data)
 		else
 			break;
 	}
-	cout<<"Число нулей = "<<int(count_ones)<<endl;
-	cout<<"Res = "<<result<<endl;
+	
 	for (int j = 0; j < count_ones; j++)
 		result += "1";
-	cout<<"Res + 1 = "<<result<<endl;
+	
 	string total;
 	for (int j = 0; j < result.size(); j++)
 		total += result[result.size()-1 - j];
-	cout<<"Total = "<<total<<endl;
+
 	return total;
 }
 
@@ -735,10 +734,14 @@ void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signa
 	
 		bdModMult(Sign,S,H_XR,secp256k1_n);
 
-		if(bdCompare(Sign,secp256k1_limit_sign) > 0)
+		if(type_hash == TYPE_HASH_ECDSA_ETHEREUM)
 		{
-			bdSubtract_s(Sign,secp256k1_n,Sign);
+			if(bdCompare(Sign,secp256k1_limit_sign) > 0)
+			{	
+				bdSubtract_s(Sign,secp256k1_n,Sign);
+			}
 		}
+		
 		if((bdCompare(R.X,value_0) > 0) && (bdCompare(Sign,value_0) > 0))
 			correct_signature = true;
 	}
@@ -849,10 +852,14 @@ bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* si
 	BIGD value_0;
 	value_0 = bdNew();
 	bdSetShort(value_0, 0);
-	if(bdCompare(Sign,secp256k1_limit_sign) > 0)
-	{		
-		return false;
+	if(type_hash == TYPE_HASH_ECDSA_ETHEREUM)
+	{
+		if(bdCompare(Sign,secp256k1_limit_sign) > 0)
+		{		
+			return false;
+		}
 	}
+	
 	if((bdCompare(R,value_0) == 0) || (bdCompare(Sign,value_0) == 0))
 	{
 		return false;
