@@ -57,3 +57,5 @@ void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signa
 bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* signature, unsigned char* public_key, unsigned char type_hash);
 
 void BTC_raw_addr_from_id(unsigned char* id, unsigned char* raw_addr, unsigned char type_net);
+
+string generate_BTC_multisig_adress(unsigned char M, unsigned char N, unsigned char* public_keys);

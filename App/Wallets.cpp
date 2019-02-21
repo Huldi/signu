@@ -21,6 +21,8 @@ unsigned char out_iv[32] = {'s','e','c','r','e','t','t','o','p','r','a','s','s',
 
 unsigned char summand_coordinates[256];
 
+const unsigned char OP_CHECKMULTISIG = 0xAE;
+
 
 
 void start_secp256k1_param()
@@ -300,7 +302,7 @@ string BTC_adress_from_public_key(unsigned char* public_key_compress)
 		hashing_key[4 * j + 3] = (ripemd160_hash[j] >> 8) & 0xFF;
 		hashing_key[4 * j + 4] = ripemd160_hash[j] & 0xFF;
 	}
-	hashing_key[0] = 0x00;// 0x6f testnet, 0x00 - mainnet
+	hashing_key[0] = 0x6f;// 0x6f testnet, 0x00 - mainnet
 
 	sha256_calc_hash(hashing_key, 21, sha256_hash);
 
@@ -734,14 +736,11 @@ void ecdsa_sign_data(unsigned char* data,uint32_t len_data, unsigned char* signa
 	
 		bdModMult(Sign,S,H_XR,secp256k1_n);
 
-		if(type_hash == TYPE_HASH_ECDSA_ETHEREUM)
-		{
-			if(bdCompare(Sign,secp256k1_limit_sign) > 0)
-			{	
-				bdSubtract_s(Sign,secp256k1_n,Sign);
-			}
+		if(bdCompare(Sign,secp256k1_limit_sign) > 0)
+		{	
+			bdSubtract_s(Sign,secp256k1_n,Sign);
 		}
-		
+				
 		if((bdCompare(R.X,value_0) > 0) && (bdCompare(Sign,value_0) > 0))
 			correct_signature = true;
 	}
@@ -852,14 +851,12 @@ bool ecdsa_verify_sign(unsigned char* data, uint32_t len_data, unsigned char* si
 	BIGD value_0;
 	value_0 = bdNew();
 	bdSetShort(value_0, 0);
-	if(type_hash == TYPE_HASH_ECDSA_ETHEREUM)
-	{
-		if(bdCompare(Sign,secp256k1_limit_sign) > 0)
-		{		
-			return false;
-		}
-	}
 	
+	if(bdCompare(Sign,secp256k1_limit_sign) > 0)
+	{		
+		return false;
+	}
+		
 	if((bdCompare(R,value_0) == 0) || (bdCompare(Sign,value_0) == 0))
 	{
 		return false;
@@ -952,4 +949,77 @@ void BTC_raw_addr_from_id(unsigned char* id, unsigned char* raw_addr, unsigned c
 		raw_addr[4 * j + 4] = ripemd160_hash[j] & 0xFF;
 	}
 	raw_addr[0] = type_net;
+}
+
+string generate_BTC_multisig_adress(unsigned char M, unsigned char N, unsigned char* public_keys)
+{
+	string result = "";
+	if(M > 8 || N>15)
+	{
+		return result;
+	}
+
+	unsigned char rawAddr[3 + N*34];
+	rawAddr[0] = 0x50 + M;
+	for(int j=0;j<N;j++)
+	{
+		rawAddr[1 + j*34] = 0x21;
+		for(int k=0;k<33;k++)
+		{
+			rawAddr[2+j*34 + k] = public_keys[j*33 + k];
+		}
+	}
+	rawAddr[N*34 + 1] = 0x50 + N;
+	rawAddr[N*34 + 2] = OP_CHECKMULTISIG;
+
+	unsigned char adr[25];
+	uint32_t sha256_hash[8];
+    uint32_t ripemd160_hash[5];
+	unsigned char temp[32];
+	unsigned char hashing_key[21];
+
+	sha256_calc_hash(rawAddr, N*34+3, sha256_hash);
+
+	for (int j = 0; j < 8; j++)
+	{
+		temp[j * 4] = sha256_hash[j] >> 24;
+		temp[j * 4 + 1] = (sha256_hash[j] >> 16) & 0xFF;
+		temp[j * 4 + 2] = (sha256_hash[j] >> 8) & 0xFF;
+		temp[j * 4 + 3] = (sha256_hash[j]) & 0xFF;
+	}
+
+	ripemd160_calc_hash(temp, 32, ripemd160_hash);
+
+	for (int j = 0; j < 5; j++)
+	{
+		hashing_key[4 * j + 1] = ripemd160_hash[j] >> 24;
+		hashing_key[4 * j + 2] = (ripemd160_hash[j] >> 16) & 0xFF;
+		hashing_key[4 * j + 3] = (ripemd160_hash[j] >> 8) & 0xFF;
+		hashing_key[4 * j + 4] = ripemd160_hash[j] & 0xFF;
+	}
+	hashing_key[0] = 0x05;// 0x05 - multisig
+
+	sha256_calc_hash(hashing_key, 21, sha256_hash);
+
+	for (int j = 0; j < 8; j++)
+	{
+		temp[j * 4] = sha256_hash[j] >> 24;
+		temp[j * 4 + 1] = (sha256_hash[j] >> 16) & 0xFF;
+		temp[j * 4 + 2] = (sha256_hash[j] >> 8) & 0xFF;
+		temp[j * 4 + 3] = (sha256_hash[j]) & 0xFF;
+	}
+
+	sha256_calc_hash(temp, 32, sha256_hash);
+
+	for (int j = 0; j < 21; j++)
+		adr[j] = hashing_key[j];
+
+	adr[21] = sha256_hash[0] >> 24;
+	adr[22] = (sha256_hash[0] >> 16) & 0xFF;
+	adr[23] = (sha256_hash[0] >> 8) & 0xFF;
+	adr[24] = sha256_hash[0] & 0xFF;
+
+	result = encoding_to_BASE58(adr);
+
+	return result;
 }
