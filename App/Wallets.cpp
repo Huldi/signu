@@ -272,7 +272,7 @@ string encoding_to_BASE58(unsigned char* data)
 	return total;
 }
 
-string BTC_adress_from_public_key(unsigned char* public_key_compress)
+string BTC_adress_from_public_key(unsigned char* public_key_compress, unsigned char type_net)
 {
     uint32_t sha256_hash[8];
     uint32_t ripemd160_hash[5];
@@ -302,7 +302,7 @@ string BTC_adress_from_public_key(unsigned char* public_key_compress)
 		hashing_key[4 * j + 3] = (ripemd160_hash[j] >> 8) & 0xFF;
 		hashing_key[4 * j + 4] = ripemd160_hash[j] & 0xFF;
 	}
-	hashing_key[0] = 0x6f;// 0x6f testnet, 0x00 - mainnet
+	hashing_key[0] = type_net;// 0x6f testnet, 0x00 - mainnet
 
 	sha256_calc_hash(hashing_key, 21, sha256_hash);
 
@@ -460,12 +460,12 @@ string generate_ETH_adress(unsigned char* id){
 	return ETH_adress_from_public_key(public_key);	
 }
 
-string generate_BTC_adress(unsigned char* id){
+string generate_BTC_adress(unsigned char* id, unsigned char type_net){
 	unsigned char public_key_compress[33];
 	
 	export_compress_public_key_on_id(id, public_key_compress);
 	
-	string result = BTC_adress_from_public_key(public_key_compress);
+	string result = BTC_adress_from_public_key(public_key_compress, type_net);
 	
 	return result;
 }

@@ -27,7 +27,7 @@ void generate_id(unsigned char byte, unsigned int part);
 
 void start_wallet();
 
-void btc_adr(char* res, unsigned char* len_res);
+void btc_adr(char* res, unsigned char* len_res, unsigned char type_net);
 void eth_adr(char* res, unsigned char* len_res);
 
 int withdrawal_of_money(unsigned char* signature, unsigned int length_data,unsigned char cryptocurrency);

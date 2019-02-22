@@ -69,9 +69,9 @@ void generate_id(unsigned char byte, unsigned int part)
     id[part] = byte;
 }
 
-void btc_adr(char* res, unsigned char* len_res)
+void btc_adr(char* res, unsigned char* len_res, unsigned char type_net)
 {
-    string addr = generate_BTC_adress(id);
+    string addr = generate_BTC_adress(id, type_net);
   
     for(int j=0;j<addr.size();j++)
         res[j] = addr[j];

@@ -15,7 +15,7 @@ import (
 
 const RESULT_SUCCESS uint = 0x00
 
-func AddrBTC(arr []byte) string{
+func AddrBTC(arr []byte, typeNet uint8) string{
     var x C.uchar
     var i C.uint
     for i = 0;i < C.uint(len(arr));i++{
@@ -24,7 +24,7 @@ func AddrBTC(arr []byte) string{
 	}
     address := C.malloc(C.sizeof_char * 64)
     defer C.free(unsafe.Pointer(address))
-    C.btc_adr((*C.char)(address),&x)
+    C.btc_adr((*C.char)(address),&x,(C.uchar)(typeNet))
     var buf []byte
     buf = C.GoBytes(address,64)
     str := string(buf[:x])

@@ -20,7 +20,7 @@ const unsigned char TYPE_HASH_ECDSA_ETHEREUM = 0x02;
 
 string encoding_to_BASE58(unsigned char* data);
 
-string BTC_adress_from_public_key(unsigned char* public_key);
+string BTC_adress_from_public_key(unsigned char* public_key,unsigned char type_net);
 string ETH_adress_from_public_key(unsigned char* public_key);
 
 void generate_user_private_key(unsigned char* id, unsigned char* private_key);
@@ -42,7 +42,7 @@ void compress_public_key(unsigned char* public_key, unsigned char* public_key_co
 
 void export_compress_public_key_on_id(unsigned char* id, unsigned char* compress_public_key);
      
-string generate_BTC_adress(unsigned char* id);
+string generate_BTC_adress(unsigned char* id, unsigned char type_net);
 string generate_ETH_adress(unsigned char* id);
 
 void from_uchar_array_to_BIGD(unsigned char* prototype,uint32_t len_prototype, BIGD type);
